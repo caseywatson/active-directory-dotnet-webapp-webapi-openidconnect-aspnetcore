@@ -1,33 +1,46 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Concurrent;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
+using TodoListService.Interfaces;
 using TodoListService.Models;
 
 namespace TodoListService.Controllers
 {
-   [Authorize]
+    [Authorize]
     [Route("api/[controller]")]
     public class TodoListController : Controller
     {
-        static ConcurrentBag<TodoItem> todoStore = new ConcurrentBag<TodoItem>();
+        private readonly ITodoItemRepository todoItemRepository;
+
+        public TodoListController(ITodoItemRepository todoItemRepository)
+        {
+            this.todoItemRepository = todoItemRepository;
+        }
 
         // GET: api/values
         [HttpGet]
-        public IEnumerable<TodoItem> Get()
+        public async Task<IEnumerable<TodoItem>> Get()
         {
-            string owner = (User.FindFirst(ClaimTypes.NameIdentifier))?.Value;
-            return todoStore.Where(t => t.Owner == owner).ToList();
+            var userName = (User.FindFirst(ClaimTypes.NameIdentifier))?.Value;
+
+            return await todoItemRepository.GetUserItemsAsync(userName);
         }
 
         // POST api/values
         [HttpPost]
-        public void Post([FromBody]TodoItem Todo)
+        public async Task Post([FromBody]TodoItem Todo)
         {
-            string owner = (User.FindFirst(ClaimTypes.NameIdentifier))?.Value;
-            todoStore.Add(new TodoItem { Owner = owner, Title = Todo.Title });
+            var userName = (User.FindFirst(ClaimTypes.NameIdentifier))?.Value;
+
+            await todoItemRepository.AddItemAsync(new TodoItem
+            {
+                Id = Guid.NewGuid().ToString(),
+                Owner = userName,
+                Title = Todo.Title
+            });
         }
     }
 }
