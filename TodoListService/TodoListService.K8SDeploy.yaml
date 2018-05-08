@@ -1,0 +1,34 @@
+﻿apiVersion: v1
+kind: Service
+metadata:
+  name: todo-api-service
+spec:
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  selector:
+    app: todo-api
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: todo-api
+spec:
+  replicas: 3
+  selector:
+    app: todo-api
+  template:
+    metadata:
+      labels:
+        app: todo-api
+    spec:
+      containers:
+      - name: todo-api
+        image: mckdemo.azurecr.io/todolistservice:latest
+        ports:
+        - containerPort: 80
+          protocol: TCP
+      imagePullSecrets:
+      - name: mck-demo-registry
